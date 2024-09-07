@@ -368,20 +368,15 @@
     const [a, setA] = React.useState(1);
     const [b, setB] = React.useState(2);
 
-    const memoizedValue = React.useMemo(() => expensiveCalculation(a, b
-  ```
-
-), [a, b]);
+    const memoizedValue = React.useMemo(() => expensiveCalculation(a, b), [a, b]);
 
     const handleClick = React.useCallback(() => {
       console.log(memoizedValue);
     }, [memoizedValue]);
 
     return <button onClick={handleClick}>Click me</button>;
-
-};
-
-````
+ };
+ ```
 
 #### **React Native Version**
 
