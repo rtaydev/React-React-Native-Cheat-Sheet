@@ -1,6 +1,8 @@
-# React-React-Native-Cheat-Sheet
+# React & React Native Cheat Sheet
 
-## **React/React Native & TypeScript Advanced Cheat Sheet for Senior/Lead Engineers**
+## **React/React Native & TypeScript Advanced Cheat Sheet for Engineers**
+
+A good campanion to have during interviews, tech tests and general coding time.
 
 ---
 
@@ -2013,3 +2015,413 @@ You can integrate TOTP (Time-Based One-Time Password) using external services or
 - **Regular security audits**: Ensure you perform regular audits of your application dependencies and codebase for known security vulnerabilities.
 
 ---
+
+Let’s extend your interview cheat sheet by including detailed examples of advanced techniques like **useReducer with deep object manipulation**, **memoization**, **context and providers**, **timeout hooks and methods**, **theming and styling**, **modals**, **React Native components**, and finally, **standard TypeScript utilities for filtering, sorting, and reversing arrays and objects**.
+
+---
+
+## **Advanced React/React Native Cheat Sheet for Senior/Lead Engineers**
+
+### **1. useReducer with Deep Object Manipulation and Memoization**
+
+When working with complex nested objects, `useReducer` provides a structured way to handle state updates. Memoization is important to avoid unnecessary re-renders.
+
+#### **Example: Nested State with useReducer and Memoization**
+
+```tsx
+import React, { useReducer, useMemo } from 'react';
+
+// Define types for the state and actions
+interface AppState {
+  user: {
+    details: {
+      name: string;
+      age: number;
+    };
+    settings: {
+      theme: string;
+      notifications: boolean;
+    };
+  };
+}
+
+interface UpdateUserDetailsAction {
+  type: 'UPDATE_USER_DETAILS';
+  payload: { name?: string; age?: number };
+}
+
+interface UpdateSettingsAction {
+  type: 'UPDATE_SETTINGS';
+  payload: { theme?: string; notifications?: boolean };
+}
+
+type Action = UpdateUserDetailsAction | UpdateSettingsAction;
+
+const initialState: AppState = {
+  user: {
+    details: {
+      name: 'John Doe',
+      age: 30,
+    },
+    settings: {
+      theme: 'light',
+      notifications: true,
+    },
+  },
+};
+
+const reducer = (state: AppState, action: Action): AppState => {
+  switch (action.type) {
+    case 'UPDATE_USER_DETAILS':
+      return {
+        ...state,
+        user: {
+          ...state.user,
+          details: {
+            ...state.user.details,
+            ...action.payload,
+          },
+        },
+      };
+    case 'UPDATE_SETTINGS':
+      return {
+        ...state,
+        user: {
+          ...state.user,
+          settings: {
+            ...state.user.settings,
+            ...action.payload,
+          },
+        },
+      };
+    default:
+      return state;
+  }
+};
+
+const App = () => {
+  const [state, dispatch] = useReducer(reducer, initialState);
+
+  // Memoize the user's name and theme to prevent unnecessary re-renders
+  const userName = useMemo(() => state.user.details.name, [state.user.details.name]);
+  const userTheme = useMemo(() => state.user.settings.theme, [state.user.settings.theme]);
+
+  const handleUpdateName = () => {
+    dispatch({ type: 'UPDATE_USER_DETAILS', payload: { name: 'Jane Doe' } });
+  };
+
+  const handleToggleTheme = () => {
+    dispatch({ type: 'UPDATE_SETTINGS', payload: { theme: userTheme === 'light' ? 'dark' : 'light' } });
+  };
+
+  return (
+    <div>
+      <h1>User Name: {userName}</h1>
+      <h2>Theme: {userTheme}</h2>
+      <button onClick={handleUpdateName}>Update Name</button>
+      <button onClick={handleToggleTheme}>Toggle Theme</button>
+    </div>
+  );
+};
+
+export default App;
+```
+
+**Key Takeaways**:
+- Use `useReducer` for managing deeply nested state objects.
+- Memoize values like `userName` and `userTheme` with `useMemo` to prevent unnecessary re-renders when only specific parts of the state change.
+
+---
+
+### **2. Context and Providers**
+
+The Context API, combined with Providers, is a powerful pattern for sharing state across deeply nested components.
+
+#### **Example: Context with Providers and Global State**
+
+```tsx
+import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+
+interface AppState {
+  theme: 'light' | 'dark';
+  user: string;
+}
+
+const initialState: AppState = {
+  theme: 'light',
+  user: 'John Doe',
+};
+
+interface AppContextProps {
+  state: AppState;
+  dispatch: React.Dispatch<any>;
+}
+
+const AppContext = createContext<AppContextProps | undefined>(undefined);
+
+const reducer = (state: AppState, action: any): AppState => {
+  switch (action.type) {
+    case 'TOGGLE_THEME':
+      return { ...state, theme: state.theme === 'light' ? 'dark' : 'light' };
+    default:
+      return state;
+  }
+};
+
+export const AppProvider = ({ children }: { children: ReactNode }) => {
+  const [state, dispatch] = useReducer(reducer, initialState);
+
+  return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
+};
+
+export const useAppContext = () => {
+  const context = useContext(AppContext);
+  if (!context) {
+    throw new Error('useAppContext must be used within an AppProvider');
+  }
+  return context;
+};
+
+// Usage in a component
+const ThemeComponent: React.FC = () => {
+  const { state, dispatch } = useAppContext();
+
+  return (
+    <div>
+      <h1>Current Theme: {state.theme}</h1>
+      <button onClick={() => dispatch({ type: 'TOGGLE_THEME' })}>Toggle Theme</button>
+    </div>
+  );
+};
+```
+
+**Key Takeaways**:
+- The Context API allows you to avoid prop drilling by providing global state access.
+- Combine `useReducer` with Context for scalable state management.
+
+---
+
+### **3. Timeout Hooks and Methods**
+
+Sometimes, you need to handle time-based operations, such as implementing timeouts or intervals.
+
+#### **Custom Hook: useTimeout**
+
+```tsx
+import { useEffect, useRef } from 'react';
+
+export const useTimeout = (callback: () => void, delay: number) => {
+  const savedCallback = useRef(callback);
+
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
+
+  useEffect(() => {
+    if (delay !== null) {
+      const id = setTimeout(() => savedCallback.current(), delay);
+      return () => clearTimeout(id);
+    }
+  }, [delay]);
+};
+
+// Usage
+const TimerComponent: React.FC = () => {
+  useTimeout(() => {
+    console.log('Timeout executed');
+  }, 5000);
+
+  return <div>Waiting for timeout...</div>;
+};
+```
+
+**Key Takeaways**:
+- Use `useTimeout` for time-based operations, avoiding the need to manually manage timers in components.
+
+---
+
+### **4. Theming and Styling**
+
+Theming allows for consistent styling across an app with different modes like light and dark themes.
+
+#### **Theming in React Native with Styled Components**
+
+1. Install **styled-components**:
+   ```bash
+   npm install styled-components
+   ```
+
+2. Define a theme:
+
+```tsx
+import styled, { ThemeProvider } from 'styled-components/native';
+
+const lightTheme = {
+  background: '#fff',
+  color: '#000',
+};
+
+const darkTheme = {
+  background: '#000',
+  color: '#fff',
+};
+
+const Container = styled.View`
+  background-color: ${(props) => props.theme.background};
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+`;
+
+const Text = styled.Text`
+  color: ${(props) => props.theme.color};
+`;
+
+const App: React.FC = () => {
+  const [theme, setTheme] = React.useState(lightTheme);
+
+  const toggleTheme = () => {
+    setTheme(theme === lightTheme ? darkTheme : lightTheme);
+  };
+
+  return (
+    <ThemeProvider theme={theme}>
+      <Container>
+        <Text>Hello, World!</Text>
+        <Button title="Toggle Theme" onPress={toggleTheme} />
+      </Container>
+    </ThemeProvider>
+  );
+};
+
+export default App;
+```
+
+**Key Takeaways**:
+- Theming enables the application of consistent colors and styles across an app, supporting both light and dark modes.
+- `styled-components` makes theme-based styling declarative and reusable.
+
+---
+
+### **5. Modals and Default React Native Components**
+
+Modals are commonly used in React Native to display content in an overlay.
+
+#### **React Native Modal Example**
+
+```tsx
+import React, { useState } from 'react';
+import { Modal, View, Text, Button, StyleSheet } from 'react-native';
+
+const ModalComponent: React.FC = () => {
+  const [modalVisible, setModalVisible] = useState(false);
+
+  return (
+    <View style={styles.centeredView}>
+      <Button title="Show Modal" onPress={() => setModalVisible(true)} />
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalView}>
+          <Text>This is a modal!</Text>
+          <Button title="Close Modal" onPress={() => setModalVisible(false)} />
+        </View>
+      </Modal>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalView: {
+    margin: 20,
+    padding: 35,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+});
+
+export default ModalComponent;
+```
+
+**Key Takeaways**:
+- React Native's built-in `Modal` component is versatile for displaying overlay content.
+- You can control the animation, visibility, and
+
+ transparency of modals.
+
+---
+
+### **6. Standard TypeScript Utilities for Arrays and Objects**
+
+In senior roles, you will often work with complex data structures like arrays of objects. Efficient filtering, sorting, and reversing are essential.
+
+#### **6.1. Filtering Arrays**
+
+```tsx
+const users = [
+  { name: 'John', age: 25 },
+  { name: 'Jane', age: 30 },
+  { name: 'Doe', age: 20 },
+];
+
+const filteredUsers = users.filter((user) => user.age >= 25);
+
+console.log(filteredUsers); // [{name: 'John', age: 25}, {name: 'Jane', age: 30}]
+```
+
+#### **6.2. Sorting Arrays**
+
+```tsx
+const sortedUsers = users.sort((a, b) => a.age - b.age);
+
+console.log(sortedUsers); // [{name: 'Doe', age: 20}, {name: 'John', age: 25}, {name: 'Jane', age: 30}]
+```
+
+#### **6.3. Reversing Arrays**
+
+```tsx
+const reversedUsers = [...users].reverse();
+
+console.log(reversedUsers); // [{name: 'Doe', age: 20}, {name: 'Jane', age: 30}, {name: 'John', age: 25}]
+```
+
+#### **6.4. Filtering and Sorting Objects**
+
+```tsx
+const userObject = {
+  user1: { name: 'John', age: 25 },
+  user2: { name: 'Jane', age: 30 },
+  user3: { name: 'Doe', age: 20 },
+};
+
+// Convert object to array, filter and sort, then convert back to object
+const filteredSortedUsers = Object.entries(userObject)
+  .filter(([key, user]) => user.age >= 25)
+  .sort(([, userA], [, userB]) => userA.age - userB.age)
+  .reduce((acc, [key, user]) => ({ ...acc, [key]: user }), {});
+
+console.log(filteredSortedUsers);
+```
+
+**Key Takeaways**:
+- TypeScript provides powerful methods like `filter`, `sort`, and `reverse` for arrays and complex objects.
+- Manipulating arrays of objects often involves converting objects into arrays for operations like sorting and filtering.
+
+---
+
