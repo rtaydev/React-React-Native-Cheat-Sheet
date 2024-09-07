@@ -2008,9 +2008,7 @@ You can integrate TOTP (Time-Based One-Time Password) using external services or
 
 - **Monitor security**: Implement server-side monitoring and alerting for unusual login attempts, token misuse, or suspicious activity.
 
-- \*\*
-
-Encrypt sensitive data\*\*: Always encrypt tokens, passwords, and any personally identifiable information (PII) before storing or transmitting it.
+- **Encrypt sensitive data**: Always encrypt tokens, passwords, and any personally identifiable information (PII) before storing or transmitting it.
 
 - **Regular security audits**: Ensure you perform regular audits of your application dependencies and codebase for known security vulnerabilities.
 
